@@ -8,7 +8,22 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
-app.use(cors()); // CORS untuk frontend
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://asset-management-blue.vercel.app'
+  ];
+
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  })); // CORS untuk frontend
+  
 app.use(express.json()); // 🔥 Penting untuk membaca request body JSON
 app.use(express.urlencoded({ extended: true })); // 🔥 Tambahkan ini untuk menangani form-data
 
