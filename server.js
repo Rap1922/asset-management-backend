@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 
 const express = require("express");
 const mysql = require("mysql2");
@@ -8,33 +8,34 @@ const jwt = require("jsonwebtoken");
 
 const app = express();
 
+// 🔹 Allowed Origins untuk CORS
 const allowedOrigins = [
-    'http://localhost:3000',
-    'https://asset-management-blue.vercel.app'
-  ];
+    "http://localhost:3000",
+    "https://asset-management-blue.vercel.app"
+];
 
-  app.use(cors({
+app.use(cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
     },
     credentials: true
-  })); // CORS untuk frontend
+}));
 
-app.use(express.json()); // 🔥 Penting untuk membaca request body JSON
-app.use(express.urlencoded({ extended: true })); // 🔥 Tambahkan ini untuk menangani form-data
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Cek apakah middleware berjalan
+// 🔹 Middleware Debug Request
 app.use((req, res, next) => {
-    console.log("📝 Middleware: Request diterima dengan method", req.method, "di", req.url);
-    console.log("📥 Request Body:", req.body);
+    console.log("📝 Request:", req.method, req.url);
+    console.log("📥 Body:", req.body);
     next();
 });
 
-// Koneksi ke MySQL Railway
+// 🔹 Koneksi ke MySQL Railway
 const db = mysql.createPool({
     host: process.env.MYSQLHOST,
     user: process.env.MYSQLUSER,
@@ -46,27 +47,23 @@ const db = mysql.createPool({
     queueLimit: 0
 }).promise();
 
+// 🔹 Cek koneksi database
+db.getConnection()
+    .then(connection => {
+        console.log("✅ Connected to MySQL");
+        connection.release();
+    })
+    .catch(err => {
+        console.error("❌ Database connection failed:", err);
+    });
 
-
-
-db.connect(err => {
-    if (err) {
-        console.error("Database connection failed:", err);
-    } else {
-        console.log("Connected to MySQL");
-    }
-});
-
-
-
+// 🔹 Cek SECRET_KEY
 const SECRET_KEY = process.env.SECRET_KEY;
-
 if (!SECRET_KEY) {
     throw new Error("❌ SECRET_KEY tidak ditemukan! Pastikan sudah diset di .env.");
 }
 
-
-// ✅ Middleware untuk Verifikasi Token JWT
+// 🔹 Middleware untuk Verifikasi Token JWT
 const verifyToken = (req, res, next) => {
     try {
         const authHeader = req.headers["authorization"];
@@ -97,17 +94,19 @@ const verifyToken = (req, res, next) => {
     }
 };
 
-module.exports = verifyToken; // ✅ Pastikan middleware bisa dipakai di file lain
-
-
-
-// app.get("/", (req, res) => {
-//     res.json({ message: "Backend API is running 🚀" });
-// });
-
-app.listen(5000, "0.0.0.0", () => {
-    console.log("Server running on port 5000 and accessible via network");
+// ✅ Endpoint Cek API Berjalan
+app.get("/", (req, res) => {
+    res.json({ message: "Backend API is running 🚀" });
 });
+
+// 🔹 Jalankan Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${PORT} and accessible via network`);
+});
+
+// ✅ Export module untuk digunakan di file lain
+module.exports = { db, verifyToken };
 
 
 
