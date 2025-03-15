@@ -13,17 +13,7 @@ const allowedOrigins = [
     'https://asset-management-blue.vercel.app'
   ];
 
-  app.use(cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true
-  })); // CORS untuk frontend
-
+app.use(cors()); // CORS untuk frontend
 app.use(express.json()); // 🔥 Penting untuk membaca request body JSON
 app.use(express.urlencoded({ extended: true })); // 🔥 Tambahkan ini untuk menangani form-data
 
@@ -35,18 +25,13 @@ app.use((req, res, next) => {
 });
 
 // Koneksi ke MySQL Railway
-const db = mysql.createPool({
+const db = mysql.createConnection({
     host: process.env.MYSQLHOST,
     user: process.env.MYSQLUSER,
     password: process.env.MYSQLPASSWORD,
     database: process.env.MYSQLDATABASE,
-    port: process.env.MYSQLPORT,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-}).promise();
-
-
+    port: process.env.MYSQLPORT
+});
 
 
 db.connect(err => {
@@ -90,9 +75,9 @@ const verifyToken = (req, res, next) => {
 };
 
 
-// app.get("/", (req, res) => {
-//     res.json({ message: "Backend API is running 🚀" });
-// });
+app.get("/", (req, res) => {
+    res.json({ message: "Backend API is running 🚀" });
+});
 
 app.listen(5000, "0.0.0.0", () => {
     console.log("Server running on port 5000 and accessible via network");
@@ -326,17 +311,16 @@ app.post("/companies", (req, res) => {
 
 
 // 🔹 GET COMPANIES (Untuk Form Login)
-app.get("/companies/list", async (req, res) => {
-    try {
-        const [results] = await db.query("SELECT id, nama_perusahaan FROM companies");
+app.get("/companies/list", (req, res) => {
+    db.query("SELECT id, nama_perusahaan FROM companies", (err, results) => {
+        if (err) {
+            console.error("Database error:", err); // 🔥 Debug error
+            return res.status(500).json({ error: err.message });
+        }
         console.log("Data perusahaan:", results); // 🔥 Debug hasil query
         res.json(results);
-    } catch (err) {
-        console.error("Database error:", err); // 🔥 Debug error
-        res.status(500).json({ error: err.message });
-    }
+    });
 });
-
 
 
 
