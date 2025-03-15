@@ -15,30 +15,36 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-    origin: "*", // 🔥 **Ganti ini untuk sementara, lalu ubah ke allowedOrigins**
-    credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true
 }));
 
+// 🔹 Middleware untuk menangani preflight requests
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*"); // 🔥 Uji coba, nanti bisa ubah ke `allowedOrigins`
+    res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     next();
 });
 
+// 🔹 Middleware untuk parsing JSON dan form-urlencoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// // 🔹 Middleware Debug Request
-// app.use((req, res, next) => {
-//     console.log("📝 Request:", req.method, req.url);
-//     console.log("📥 Body:", req.body);
-//     next();
-// });
+// 🔹 Debugging Middleware (Opsional, bisa diaktifkan jika perlu)
+app.use((req, res, next) => {
+    console.log("📝 Request:", req.method, req.url);
+    console.log("📥 Body:", req.body);
+    next();
+});
 
-// 🔹 Koneksi ke MySQL Railway
+// ✅ Koneksi ke MySQL (Gunakan `createPool()` untuk efisiensi)
 const db = mysql.createPool({
     host: process.env.MYSQLHOST,
     user: process.env.MYSQLUSER,
@@ -50,7 +56,7 @@ const db = mysql.createPool({
     queueLimit: 0
 }).promise();
 
-// 🔹 Cek koneksi database
+// 🔹 Cek koneksi database saat startup
 db.getConnection()
     .then(connection => {
         console.log("✅ Connected to MySQL");
@@ -58,15 +64,17 @@ db.getConnection()
     })
     .catch(err => {
         console.error("❌ Database connection failed:", err);
+        process.exit(1); // Matikan server jika gagal konek ke database
     });
 
-// 🔹 Cek SECRET_KEY
+// ✅ Cek SECRET_KEY dari .env
 const SECRET_KEY = process.env.SECRET_KEY;
 if (!SECRET_KEY) {
-    throw new Error("❌ SECRET_KEY tidak ditemukan! Pastikan sudah diset di .env.");
+    console.error("❌ SECRET_KEY tidak ditemukan! Pastikan sudah diset di .env.");
+    process.exit(1); // Matikan server jika SECRET_KEY tidak ada
 }
 
-// 🔹 Middleware untuk Verifikasi Token JWT
+// ✅ Middleware untuk Verifikasi Token JWT
 const verifyToken = (req, res, next) => {
     try {
         const authHeader = req.headers["authorization"];
@@ -80,7 +88,7 @@ const verifyToken = (req, res, next) => {
             return res.status(401).json({ error: "❌ Format token tidak valid!" });
         }
 
-        const token = tokenParts[1]; // Ambil token setelah "Bearer"
+        const token = tokenParts[1];
 
         jwt.verify(token, SECRET_KEY, (err, decoded) => {
             if (err) {
@@ -88,7 +96,7 @@ const verifyToken = (req, res, next) => {
                 return res.status(401).json({ error: "❌ Token tidak valid atau telah kedaluwarsa!" });
             }
 
-            req.user = decoded; // Simpan data user yang sudah diverifikasi ke req.user
+            req.user = decoded;
             next();
         });
     } catch (error) {
@@ -102,14 +110,21 @@ app.get("/", (req, res) => {
     res.json({ message: "Backend API is running 🚀" });
 });
 
-// 🔹 Jalankan Server
+// ✅ Middleware untuk menangani error
+app.use((err, req, res, next) => {
+    console.error("🔥 Error Middleware:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+});
+
+// ✅ Jalankan Server
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, "0.0.0.0", () => {
     console.log(`🚀 Server running on port ${PORT} and accessible via network`);
 });
 
-// ✅ Export module untuk digunakan di file lain
+// ✅ Export module jika digunakan di file lain
 module.exports = { db, verifyToken };
+
 
 
 
