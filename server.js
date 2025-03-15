@@ -117,9 +117,8 @@ app.use((err, req, res, next) => {
 });
 
 // ✅ Jalankan Server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT} and accessible via network`);
+app.listen(5000, "0.0.0.0", () => {
+    console.log("Server running on port 5000 and accessible via network");
 });
 
 // ✅ Export module jika digunakan di file lain
