@@ -25,28 +25,22 @@ app.use((req, res, next) => {
 });
 
 // Koneksi ke MySQL Railway
-// ✅ Koneksi ke MySQL (Gunakan `createPool()` untuk efisiensi)
-const db = mysql.createPool({
+const db = mysql.createConnection({
     host: process.env.MYSQLHOST,
     user: process.env.MYSQLUSER,
     password: process.env.MYSQLPASSWORD,
     database: process.env.MYSQLDATABASE,
-    port: process.env.MYSQLPORT,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-}).promise();
+    port: process.env.MYSQLPORT
+});
 
-// 🔹 Cek koneksi database saat startup
-db.getConnection()
-    .then(connection => {
-        console.log("✅ Connected to MySQL");
-        connection.release();
-    })
-    .catch(err => {
-        console.error("❌ Database connection failed:", err);
-        process.exit(1); // Matikan server jika gagal konek ke database
-    });
+
+db.connect(err => {
+    if (err) {
+        console.error("Database connection failed:", err);
+    } else {
+        console.log("Connected to MySQL");
+    }
+});
 
 // Secret Key untuk JWT
 const SECRET_KEY = process.env.SECRET_KEY; // HARUS SAMA!
