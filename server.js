@@ -13,12 +13,24 @@ const allowedOrigins = [
     'https://asset-management-blue.vercel.app'
   ];
 
-app.use(cors()); // CORS untuk frontend
+  app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error("Not allowed by CORS"));
+        }
+    },
+    credentials: true
+})); // CORS untuk frontend
 app.use(express.json()); // 🔥 Penting untuk membaca request body JSON
 app.use(express.urlencoded({ extended: true })); // 🔥 Tambahkan ini untuk menangani form-data
 
 // Cek apakah middleware berjalan
 app.use((req, res, next) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
     console.log("📝 Middleware: Request diterima dengan method", req.method, "di", req.url);
     console.log("📥 Request Body:", req.body);
     next();
