@@ -1422,7 +1422,7 @@ app.get("/assets/:kode_asset", verifyToken, (req, res) => {
             asset_subtypes.nama_subaset AS sub_jenis_aset
         FROM assets
         LEFT JOIN companies ON assets.kode_perusahaan = companies.id
-        LEFT JOIN departments ON assets.kode_departemen = departments.kode
+        LEFT JOIN departments ON assets.kode_departemen = departments.id
         LEFT JOIN locations ON assets.kode_lokasi = locations.id
         LEFT JOIN asset_types ON assets.jenis_id = asset_types.id
         LEFT JOIN asset_subtypes ON assets.subjenis_id = asset_subtypes.id
